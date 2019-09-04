@@ -15,7 +15,7 @@ class Episode:
 
     @property
     def page_url(self):
-        return self.__page_url
+        return 'http://www.tv5monde.com' + self.__page_url
 
     @property
     def image_url(self):
