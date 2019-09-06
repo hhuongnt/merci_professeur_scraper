@@ -102,6 +102,9 @@ def read_url(url, sleep_duration_between_attempts=10):
 
 
 def fetch_episodes(url):
+    """
+    Return a list of objects Episode from all pages
+    """
     episodes = []
     html = read_url(url)
     # decode bytes to string then load to json
