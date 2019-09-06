@@ -106,12 +106,38 @@ def fetch_episodes(url):
     html = read_url(url)
     # decode bytes to string then load to json
     json_data = json.loads(html.decode('utf-8'))
-    episodes_data = json_data['episodes']
-    for episode_data in episodes_data:
-        episodes.append(Episode.from_json(episode_data))
+    # Waypoint 4: Fetch the List of all the Episodes
+    numpages = json_data['numPages']
+    for i in range(1, numpages+1):
+        url = url + '?page={}'.format(i)
+        html = read_url(url)
+        json_data = json.loads(html.decode('utf-8'))
+        episodes_data = json_data['episodes']
+        for episode_data in episodes_data:
+            episodes.append(Episode.from_json(episode_data))
     return episodes
 # url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json'
 # episodes = fetch_episodes(url)
 # print(len(episodes))
 # for episode in episodes:
 #     print(episode.title, episode.episode_id)
+
+
+# Waypoint 5: Parse Broadcast Data of an Episode
+def fetch_episode_html_page(episode):
+    """
+    Returns the textual HTML content of the episode page (cf. page_url).
+    This function calls the function read_url to read data (bytes) from
+    the specified URL, and converts these data (encoded in UTF-8) to a string
+    """
+    url = episode.page_url
+    html = read_url(url)
+    return html.decode('utf-8')
+
+
+def parse_broadcast_data_attribute(html_page):
+    pass
+# url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json'
+# episodes = fetch_episodes(url)
+# episode = episodes[0]
+html_page = fetch_episode_html_page(episode)
