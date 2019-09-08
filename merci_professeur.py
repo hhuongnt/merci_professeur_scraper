@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-from os import path
+import os
+import time
 import json
 from urllib import error, request
+from urllib.parse import urlparse
 
 # Waypoint 1: Write a Python Class Episode
 class Episode:
@@ -44,7 +46,7 @@ class Episode:
 # Waypoint 2: Retrieve the Identification of an Episode
     @staticmethod
     def __parse_episode_id(url):
-        episode_id = path.basename(url).split('.')[0]
+        episode_id = os.path.basename(url).split('.')[0]
         return episode_id
 
     @property
@@ -66,7 +68,7 @@ class Episode:
 
 
 # Waypoint 3: Fetch the List of Episodes
-def read_url(url, sleep_duration_between_attempts=10):
+def read_url(url, sleep_duration_between_attempts=1):
     """
     Return data fetched from a HTTP endpoint.
 
@@ -93,9 +95,14 @@ def read_url(url, sleep_duration_between_attempts=10):
         html = response.read()
         # return bytes type
         return html
-    except error.HTTPError:
-        time.sleep(sleep_duration_between_attempts)
-        return read_url(url)
+    except error.HTTPError as e:
+        if e.code == 503:
+            time.sleep(sleep_duration_between_attempts)
+            print(e.code)
+            print('continue')
+            return read_url(url)
+        else:
+            return e
 # url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json'
 # url = 'http://www.fakewebsite.blabla.com'
 # print(type(read_url(url)))
@@ -106,14 +113,16 @@ def fetch_episodes(url):
     Return a list of objects Episode from all pages
     """
     episodes = []
-    html = read_url(url)
+    if 'page' not in url:
+        url = url + '?page={}'
+    html = read_url(url.format(1))
     # decode bytes to string then load to json
     json_data = json.loads(html.decode('utf-8'))
     # Waypoint 4: Fetch the List of all the Episodes
     numpages = json_data['numPages']
     for i in range(1, numpages+1):
-        url = url + '?page={}'.format(i)
-        html = read_url(url)
+        new_url = url.format(i)
+        html = read_url(new_url)
         json_data = json.loads(html.decode('utf-8'))
         episodes_data = json_data['episodes']
         for episode_data in episodes_data:
@@ -139,8 +148,57 @@ def fetch_episode_html_page(episode):
 
 
 def parse_broadcast_data_attribute(html_page):
-    pass
+    for line in html_page.split('\n'):
+        if 'hlstv5mplus-vh.akamaihd.net' in line:
+            broadcast_data_line = line
+    broadcast_data_line = broadcast_data_line.split("data-broadcast='")[1]
+    broadcast_attribute = broadcast_data_line.split("' data-duration")[0]
+    return json.loads(broadcast_attribute)
 # url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json'
 # episodes = fetch_episodes(url)
 # episode = episodes[0]
+# html_page = fetch_episode_html_page(episode)
+# print(parse_broadcast_data_attribute(html_page))
+
+
+# Waypoint 6: Build a URL Pattern of the Video Segments of an Episode
+def build_segment_url_pattern(broadcast_data):
+    url_sample = broadcast_data['files'][0]['url']
+    url = url_sample.split('master.m3u8')[0] + 'segment{}_3_av.ts?null=0'
+    o = urlparse(url)
+    return o.scheme + '://' + o.netloc + '/' + o.path
+url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
+episodes = fetch_episodes(url)
+print(len(episodes))
+episode = episodes[0]
+print(episode.page_url)
 html_page = fetch_episode_html_page(episode)
+broadcast_data = parse_broadcast_data_attribute(html_page)
+segment_url_pattern = build_segment_url_pattern(broadcast_data)
+print(segment_url_pattern)
+print(segment_url_pattern.format('1'))
+
+
+# Waypoint 7: Download the Video Segments of an Episode
+def download_episode_video_segments(episode, path='./'):
+    html_page = fetch_episode_html_page(episode)
+    broadcast_data = parse_broadcast_data_attribute(html_page)
+    dwn_link = build_segment_url_pattern(broadcast_data)
+    episode_id = episode.episode_id
+    file_name = 'segment_{}_{}.ts'
+    segment = 1
+    status_code = 200
+    while status_code == 200:
+        new_dwn_link = dwn_link.format(segment)
+        req = request.urlopen(new_dwn_link)
+        status_code = req.getcode()
+        file_name = file_name.format(episode_id, segment)
+        print(file_name)
+        dump_dir = os.path.join(path, file_name)
+        with open(dump_dir, 'wb') as f:
+            f.write(req.read())
+        segment += 1
+    # while
+url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
+episode = episodes[0]
+download_episode_video_segments(episode)
