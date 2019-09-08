@@ -167,38 +167,48 @@ def build_segment_url_pattern(broadcast_data):
     url = url_sample.split('master.m3u8')[0] + 'segment{}_3_av.ts?null=0'
     o = urlparse(url)
     return o.scheme + '://' + o.netloc + '/' + o.path
-url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
-episodes = fetch_episodes(url)
-print(len(episodes))
-episode = episodes[0]
-print(episode.page_url)
-html_page = fetch_episode_html_page(episode)
-broadcast_data = parse_broadcast_data_attribute(html_page)
-segment_url_pattern = build_segment_url_pattern(broadcast_data)
-print(segment_url_pattern)
-print(segment_url_pattern.format('1'))
+# url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
+# episodes = fetch_episodes(url)
+# print(len(episodes))
+# episode = episodes[0]
+# print(episode.page_url)
+# html_page = fetch_episode_html_page(episode)
+# broadcast_data = parse_broadcast_data_attribute(html_page)
+# segment_url_pattern = build_segment_url_pattern(broadcast_data)
+# print(segment_url_pattern)
+# print(segment_url_pattern.format('1'))
 
 
 # Waypoint 7: Download the Video Segments of an Episode
-def download_episode_video_segments(episode, path='./'):
+def download_episode_video_segments(episode, path='~/Desktop/Videos'):
     html_page = fetch_episode_html_page(episode)
     broadcast_data = parse_broadcast_data_attribute(html_page)
     dwn_link = build_segment_url_pattern(broadcast_data)
     episode_id = episode.episode_id
     file_name = 'segment_{}_{}.ts'
     segment = 1
-    status_code = 200
-    while status_code == 200:
-        new_dwn_link = dwn_link.format(segment)
-        req = request.urlopen(new_dwn_link)
-        status_code = req.getcode()
-        file_name = file_name.format(episode_id, segment)
-        print(file_name)
-        dump_dir = os.path.join(path, file_name)
-        with open(dump_dir, 'wb') as f:
-            f.write(req.read())
-        segment += 1
-    # while
-url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
-episode = episodes[0]
-download_episode_video_segments(episode)
+    try:
+        while 1:
+            new_dwn_link = dwn_link.format(segment)
+            resp = request.urlopen(new_dwn_link)
+            new_file_name = file_name.format(episode_id, segment)
+            full_path = os.path.expanduser(path)
+            if not os.path.exists(full_path):
+                os.mkdir(full_path)
+            dump_dir = os.path.join(full_path, new_file_name)
+            print(dump_dir)
+            with open(dump_dir, 'wb') as f:
+                f.write(resp.read())
+            segment += 1
+    except error.HTTPError as e:
+        if e.code == 404:
+            pass
+        else:
+            return e
+# url = 'http://www.tv5monde.com/emissions/episodes/merci-professeur.json?page={}'
+# episodes = fetch_episodes(url)
+# episode = episodes[0]
+# download_episode_video_segments(episode)
+
+
+# Waypoint 8: 
