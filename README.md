@@ -46,16 +46,17 @@ For example, this command returns:
   ],
   "numPages":26
 }
+
 We will store the information of an episode in an object.
 
-Write a Python class Episode which constructor takes the following parameters in that particular order:
-*title: The title of the episode
+Write a ["Python class"](https://www.youtube.com/watch?v=ZDa-Z5JzLYM) Episode which constructor takes the following parameters in that particular order:
+- title: The title of the episode
 
-*page_url: The Uniform Resource Locator (URL) of the Web page dedicated to this episode
+- page_url: The Uniform Resource Locator (URL) of the Web page dedicated to this episode
 
-*image_url: The Uniform Resource Locator (URL) of the image (poster) that is shown while the video of the episode is downloading or until the user hits the play button; this is the representative of the episode's video
+- image_url: The Uniform Resource Locator (URL) of the image (poster) that is shown while the video of the episode is downloading or until the user hits the play button; this is the representative of the episode's video
 
-*broadcasting_date: The date when this episode has been broadcast
+- broadcasting_date: The date when this episode has been broadcast
 
 Write a static method from_json of this class that takes an argument payload (a JSON expression) and that returns an object Episode.
 
